@@ -1,0 +1,306 @@
+package com.bit.coin;
+
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+import com.bit.util.BITPRODUCT;
+import com.bit.util.BITYPE;
+import com.bit.util.BitURL;
+import com.csv.DAOConnection;
+import com.csv.OrderDAO;
+import com.csv.OrderStatusDAO;
+import com.csv.OrdersToBePlaced;
+
+public class ETHExecuteWithURL25 {
+
+	private static final String BASE_URL = "https://www.gdax.com/trade/ETH-USD";
+	
+	public static void main(String[] args) throws InterruptedException, ParseException {
+
+    	//System.setProperty("webdriver.firefox.marionette","C:\\geckodriver.exe");
+		//WebDriver driver = new FirefoxDriver();
+
+		System.setProperty("webdriver.chrome.driver","C:\\Working\\bin\\chromedriver.exe");
+		WebDriver driver = new ChromeDriver();
+    	
+        driver.get(BASE_URL);
+        Thread.sleep(5000);
+
+        login(driver);
+        Thread.sleep(2000);
+        System.out.println("Logged in....");
+
+//        driver.manage().window().setPosition(new Point(-2000, 0));
+
+        int buyIndicator = 0;
+        int rotateBuySell = 0;
+        while (true) {
+        	rotateBuySell++;
+    		System.out.println(Calendar.getInstance().getTime() + "-----------"+rotateBuySell+"-----------");
+    		//Thread.sleep(1000);
+
+        	List<String[]> fills  = getFills(driver, BitURL.FILLS_ETH_USD_URL, BITYPE.ETH, BITPRODUCT.ETHUSD);Thread.sleep(1000);
+
+	        initiateLoad(fills);
+	        //Thread.sleep(1000);
+	        System.out.println("Loaded Recent Orders to DB......");
+	        
+	        OrdersToBePlaced ordersToBePlaced = OrderStatusDAO.getOrdersToBePlaced(BITYPE.ETH);
+	        System.out.println("Got Orders to be Placed......");
+
+	        if (ordersToBePlaced.getRecentBuyPrices().size()>0 || ordersToBePlaced.getRecentSellPrices().size()>0) {
+		        placeOrders(driver, ordersToBePlaced, buyIndicator, BitURL.TRADE_ETH_USD_URL);
+	        }
+	        
+	        Thread.sleep(1000);
+        }
+
+        //System.out.println("Completed");
+       
+        //driver.close();
+    }
+	
+	private static void getBuyOrderPrice(String sellPriceStr) throws ParseException {
+		Double sellPrice = NumberFormat.getNumberInstance().parse(sellPriceStr).doubleValue();
+		Double limitBuyPrice = sellPrice;
+		
+		if (sellPrice % 50.00 == 0) {
+			limitBuyPrice = sellPrice - 50.00;
+		} 
+		if (sellPrice % 25.00 == 0) {
+			limitBuyPrice = sellPrice - 25.00;
+		} 
+		if (sellPrice % 10.00 == 0) {
+			limitBuyPrice = sellPrice - 10.00;
+		} 
+		if (sellPrice % 0.50 == 0) {
+			limitBuyPrice = sellPrice - 5.00;
+		}
+	}
+
+	private static void placeBuyOrder(double limitBuyPrice) {
+		System.out.println("Placing Buy Order for : " + limitBuyPrice);
+		double currentPrice = 1165.00;
+		//TODO: SEL
+		//TODO: REDUCE TIMESTAMP BETWEEN TEXT BOXES FROM 1000-->100
+		if (limitBuyPrice >= currentPrice) {
+			//TODO: limitBuyPrice = Round of CurrentPrice - 0.50;
+		}
+	}
+
+	private static void getSellOrderPrice(String buyPriceStr, int buyIndex) throws ParseException {
+		Double buyPrice = NumberFormat.getNumberInstance().parse(buyPriceStr).doubleValue();
+		Double limitSellPrice = buyPrice;
+		
+		if (buyPrice % 50.00 == 0) {
+			limitSellPrice = buyPrice + 50.00;
+			placeSellOrder(limitSellPrice);
+		} 
+		if (buyPrice % 25.00 == 0) {
+			limitSellPrice = buyPrice + 25.00;
+			placeSellOrder(limitSellPrice);
+		} 
+		if (buyPrice % 10.00 == 0) {
+			limitSellPrice = buyPrice + 10.00;
+			placeSellOrder(limitSellPrice);
+		} 
+		if (buyPrice % 0.50 == 0) {
+			limitSellPrice = buyPrice + 5.00;
+			placeSellOrder(limitSellPrice);
+		}
+	}
+
+	private static void placeSellOrder(double limitSellPrice) {
+		System.out.println("Placing Sell Order for : " + limitSellPrice);
+		double currentPrice = 1165.00;
+		//TODO: SEL
+		//TODO: REDUCE TIMESTAMP BETWEEN TEXT BOXES FROM 1000-->100
+		if (limitSellPrice <= currentPrice) {
+			//TODO: limitSellPrice = Round of CurrentPrice + 1.50;
+		}
+	}
+	private static void login(WebDriver driver) throws InterruptedException {
+        WebElement signInButton = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[1]/div[2]/button[1]"));
+        signInButton.click();
+        
+        Thread.sleep(5000);
+        
+        WebElement email = driver.findElement(By.id("email"));
+        email.sendKeys("kranti007.deals@gmail.com");
+        
+        WebElement password = driver.findElement(By.id("password"));
+        password.sendKeys("Sarigama1!");
+        
+        WebElement signInButton2 = driver.findElement(By.id("signin_button"));
+        signInButton2.click();
+
+        // Enter OneTimePwd
+        Thread.sleep(20000);
+        WebElement stepTwoVerify = driver.findElement(By.id("step_two_verify"));
+        stepTwoVerify.click();
+        Thread.sleep(5000);
+	}
+	
+	private static void placeBuyOrderWithCurrentPrice(WebDriver driver, String tradeURL, int buyIndex) throws ParseException, InterruptedException {
+
+		driver.get(tradeURL);
+        
+        Thread.sleep(2000);
+        
+        WebElement limitTab = null;
+        try {
+            limitTab = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/ul[1]/li[2]"));
+            limitTab.click();
+        } catch (Exception e) {
+        	System.out.println("----------------Place BUY Failed... Trying 2nd attempt----------------");
+            Thread.sleep(3000);
+        	limitTab = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/ul[1]/li[2]"));
+            limitTab.click();
+		}
+        
+        WebElement currentPriceElement = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[2]/div/div[1]/ul/li[2]/h4/span[1]"));
+        String currentPriceFullStr = currentPriceElement.getText();
+		String currentPriceDollarStr = currentPriceFullStr.substring(0,currentPriceFullStr.indexOf("."));
+		int currentPriceDollar = NumberFormat.getNumberInstance(java.util.Locale.US).parse(currentPriceDollarStr).intValue();
+
+    	int limitInitPrice = currentPriceDollar-4-buyIndex;
+        Thread.sleep(1000);
+        WebElement amountField = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/div[1]/div[1]/div[2]/input"));
+        amountField.clear();
+        amountField.sendKeys("0.01");
+        WebElement limitPrice = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/div[1]/div[2]/div[2]/input"));
+        limitPrice.clear();
+        limitPrice.sendKeys("" + limitInitPrice);
+        Thread.sleep(1000);
+        WebElement placeOrderButton = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/button"));
+        placeOrderButton.click();
+        Thread.sleep(1000);
+	}
+
+	private static void placeSpecificSellOrder(WebDriver driver, String price, String tradeURL) throws ParseException, InterruptedException {
+
+		driver.get(tradeURL);
+        
+        Thread.sleep(5000);
+        
+        WebElement limitTab = null;
+        try {
+    		limitTab = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/ul[1]/li[2]"));
+            limitTab.click();
+        } catch (Exception e) {
+        	System.out.println("----------------Place SELL Failed... Trying 2nd attempt----------------");
+            Thread.sleep(3000);
+    		limitTab = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/ul[1]/li[2]"));
+            limitTab.click();
+		}
+
+        WebElement sellTab = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/ul[2]/li[2]"));
+        sellTab.click();
+        
+		String boughtPriceDollarStr = price.substring(0,price.indexOf("."));
+		int boughtPriceDollar = NumberFormat.getNumberInstance(java.util.Locale.US).parse(boughtPriceDollarStr).intValue();
+
+        WebElement currentPriceElement = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[2]/div/div[1]/ul/li[2]/h4/span[1]"));
+        String currentPriceFullStr = currentPriceElement.getText();
+		String currentPriceDollarStr = currentPriceFullStr.substring(0,currentPriceFullStr.indexOf("."));
+		int currentPriceDollar = NumberFormat.getNumberInstance(java.util.Locale.US).parse(currentPriceDollarStr).intValue();
+
+    	int limitInitPrice = (int) Math.round(boughtPriceDollar * 1 + 5);
+
+		if (currentPriceDollar >= boughtPriceDollar+5) {
+			limitInitPrice = currentPriceDollar + 1;
+		}
+		
+            Thread.sleep(1000);
+            WebElement amountField = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/div[1]/div[1]/div[2]/input"));
+            amountField.clear();
+            amountField.sendKeys("0.01");
+            WebElement limitPrice = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/div[1]/div[2]/div[2]/input"));
+            limitPrice.clear();
+            limitPrice.sendKeys("" + limitInitPrice);
+            Thread.sleep(1000);
+            WebElement placeOrderButton = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/button"));
+            placeOrderButton.click();
+            Thread.sleep(1000);
+	}
+
+	private static List<String[]>  getFills(WebDriver driver, String fillsURL, BITYPE bitype, String bitProduct) throws InterruptedException {
+		
+		
+		List<String[]> fillRecords = new ArrayList<String[]>();
+
+		try {
+			driver.get(fillsURL);
+	        Thread.sleep(2000);
+
+	        WebElement uiElement = null;
+	        try  {
+	        	uiElement = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/div/div[2]/ul[2]"));
+	        } catch (Exception e) {
+				System.out.println("--------- GET FILLS FAILED : 2nd Attempt-------");
+	        	Thread.sleep(3000);
+	        	uiElement = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/div/div[2]/ul[2]"));
+			}
+	        
+	    	List<WebElement> li_All = uiElement.findElements(By.tagName("li"));
+
+			for (int i = 0; i < 10; i++) {
+				WebElement element = li_All.get(i);
+				String side = element.findElements(By.tagName("div")).get(3).getText().toUpperCase();
+				String size = element.findElements(By.tagName("div")).get(4).getText();
+				String price = element.findElements(By.tagName("div")).get(5).getText();
+				String tradeId = element.findElements(By.tagName("div")).get(6).getText();
+				fillRecords.add(OrderDAO.getFillRecord(tradeId, side, size, price, bitype, bitProduct));
+			}
+		} catch (Exception e) {
+			System.out.println("--------- GET FILLS FAILED-------");
+		}
+        
+		return fillRecords;
+	}
+	
+	private static void placeOrders(WebDriver driver, OrdersToBePlaced ordersToBePlaced, int buyIndicator, String bitURL) throws ParseException, InterruptedException {
+        List<String> recentBuyPrices = ordersToBePlaced.getRecentBuyPrices();
+        Set<String> recentBuyPricesSet = new HashSet<>(recentBuyPrices);
+        
+        if (recentBuyPricesSet.size() > 0) {
+        	for (String recentBuyPrice : recentBuyPricesSet) {
+        		placeSpecificSellOrder(driver, recentBuyPrice, bitURL);
+        	}
+        }
+        
+        Thread.sleep(1000);
+
+        buyIndicator++;
+        List<String> recentSellPrices = ordersToBePlaced.getRecentSellPrices();
+        if (recentSellPrices.size() > 0 || buyIndicator % 60 == 0) {
+        	buyIndicator = 0;
+        	int buyIndex = 0;
+        	for (String recentSellPrice : recentSellPrices) {
+        		placeBuyOrderWithCurrentPrice(driver, bitURL, buyIndex);
+        		buyIndex++;
+        	}
+        	if (recentSellPrices.size() == 0) {
+        		placeBuyOrderWithCurrentPrice(driver, bitURL, buyIndex);
+        	}
+        }
+	}
+
+	private static void initiateLoad(List<String[]> fills) {
+		OrderDAO orderDAO = new OrderDAO(DAOConnection.getCon());
+		orderDAO.initiateLoad(fills);
+	}
+	
+	
+}
