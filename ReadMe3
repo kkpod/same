@@ -1,0 +1,152 @@
+	
+	private static void placeOrders(WebDriver driver, OrdersToBePlaced ordersToBePlaced, int buyIndicator, String bitURL) throws ParseException, InterruptedException {
+        List<String> recentBuyPrices = ordersToBePlaced.getRecentBuyPrices();
+        Set<String> recentBuyPricesSet = new HashSet<>(recentBuyPrices);
+        
+        if (recentBuyPricesSet.size() > 0) {
+    		driver.get(bitURL);
+            Thread.sleep(5000);
+            WebElement limitTab = findElement(driver, "//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/ul[1]/li[2]");
+            limitTab.click();
+            Thread.sleep(500);
+            
+            WebElement sellTab = findElement(driver, "//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/ul[2]/li[2]");
+            sellTab.click();
+            Thread.sleep(500);
+
+        	for (String recentBuyPrice : recentBuyPricesSet) {
+        		getSellOrderPrice(driver, recentBuyPrice, bitURL);
+        	}
+        }
+        
+        Thread.sleep(1000);
+
+        buyIndicator++;
+        List<String> recentSellPrices = ordersToBePlaced.getRecentSellPrices();
+        Set<String> recentSellPricesSet = new HashSet<>(recentSellPrices);
+        if (recentSellPricesSet.size() > 0 || buyIndicator % 60 == 0) {
+    		driver.get(bitURL);
+            Thread.sleep(2000);
+            WebElement limitTab = findElement(driver, "//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/ul[1]/li[2]");
+            limitTab.click();
+            Thread.sleep(500);
+        	
+        	buyIndicator = 0;
+        	int buyIndex = 0;
+        	for (String recentSellPrice : recentSellPricesSet) {
+        		getBuyOrderPrice(driver, bitURL, buyIndex, recentSellPrice);
+        		buyIndex++;
+        	}
+        	if (recentSellPrices.size() == 0) {
+        		//placeBuyOrderWithCurrentPrice(driver, bitURL, buyIndex);
+        	}
+        }
+	}
+	
+	private static void getBuyOrderPrice(WebDriver driver, String tradeURL, int buyIndex, String sellPriceStr) throws ParseException, InterruptedException {
+		Double sellPrice = NumberFormat.getNumberInstance().parse(sellPriceStr).doubleValue();
+		Double limitBuyPrice = sellPrice;
+		
+		if (sellPrice % 50.00 == 0) {
+			limitBuyPrice = sellPrice - 50.00;
+			placeBuyOrder(driver, limitBuyPrice, buyIndex);
+		} 
+		if (sellPrice % 25.00 == 0) {
+			limitBuyPrice = sellPrice - 25.00;
+			placeBuyOrder(driver, limitBuyPrice, buyIndex);
+		} 
+		if (sellPrice % 10.00 == 0) {
+			limitBuyPrice = sellPrice - 10.00;
+			placeBuyOrder(driver, limitBuyPrice, buyIndex);
+		} 
+		if (sellPrice % 0.50 == 0) {
+			limitBuyPrice = sellPrice - 5.00;
+			placeBuyOrder(driver, limitBuyPrice, buyIndex);
+		}
+	}
+
+	private static void placeBuyOrder(WebDriver driver, double limitBuyPrice, int buyIndex) throws ParseException, InterruptedException {
+		System.out.println("Placing Buy Order for : " + limitBuyPrice);
+
+        WebElement currentPriceElement = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[2]/div/div[1]/ul/li[2]/h4/span[1]"));
+        String currentPriceFullStr = currentPriceElement.getText();
+		String currentPriceDollarStr = currentPriceFullStr.substring(0,currentPriceFullStr.indexOf(" "));
+		double currentPrice = NumberFormat.getNumberInstance(java.util.Locale.US).parse(currentPriceDollarStr).doubleValue();
+
+		//TODO: REDUCE TIMESTAMP BETWEEN TEXT BOXES FROM 1000-->100
+		if (limitBuyPrice >= currentPrice) {
+			limitBuyPrice = Math.round(currentPrice) - 0.50;
+		}
+
+        WebElement amountField = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/div[1]/div[1]/div[2]/input"));
+        amountField.clear();
+        amountField.sendKeys("0.01");
+        WebElement limitPrice = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/div[1]/div[2]/div[2]/input"));
+        limitPrice.clear();
+        limitPrice.sendKeys("" + limitBuyPrice);
+        Thread.sleep(500);
+        WebElement placeOrderButton = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/button"));
+        placeOrderButton.click();
+        Thread.sleep(1000);
+		
+	}
+
+	private static void getSellOrderPrice(WebDriver driver, String price, String tradeURL) throws ParseException, InterruptedException {
+		
+		Double boughtPrice = NumberFormat.getNumberInstance().parse(price).doubleValue();
+		Double limitSellPrice = boughtPrice;
+		
+		if (boughtPrice % 50.00 == 0) {
+			limitSellPrice = boughtPrice + 50.00;
+			placeSellOrder(driver, limitSellPrice);;
+		} 
+		if (boughtPrice % 25.00 == 0) {
+			limitSellPrice = boughtPrice + 25.00;
+			placeSellOrder(driver, limitSellPrice);;
+		} 
+		if (boughtPrice % 10.00 == 0) {
+			limitSellPrice = boughtPrice + 10.00;
+			placeSellOrder(driver, limitSellPrice);;
+		} 
+		if (boughtPrice % 0.50 == 0) {
+			limitSellPrice = boughtPrice + 5.00;
+			placeSellOrder(driver, limitSellPrice);;
+		}
+	}
+
+	private static void placeSellOrder(WebDriver driver, double limitSellPrice) throws InterruptedException, ParseException {
+		System.out.println("Placing Sell Order for : " + limitSellPrice);
+
+        WebElement currentPriceElement = findElement(driver, "//*[@id=\"page_content\"]/div/div[2]/div/div[1]/ul/li[2]/h4/span[1]");
+        String currentPriceFullStr = currentPriceElement.getText();
+		String currentPriceDollarStr = currentPriceFullStr.substring(0,currentPriceFullStr.indexOf(" "));
+		double currentPrice = NumberFormat.getNumberInstance(java.util.Locale.US).parse(currentPriceDollarStr).doubleValue();
+
+		if (limitSellPrice <= currentPrice) {
+			limitSellPrice = Math.round(currentPrice) + 1.50;
+		}
+		
+        Thread.sleep(1000);
+        WebElement amountField = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/div[1]/div[1]/div[2]/input"));
+        amountField.clear();
+        amountField.sendKeys("0.01");
+        WebElement limitPrice = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/div[1]/div[2]/div[2]/input"));
+        limitPrice.clear();
+        limitPrice.sendKeys("" + limitSellPrice);
+        Thread.sleep(500);
+        WebElement placeOrderButton = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/button"));
+        placeOrderButton.click();
+        Thread.sleep(1000);
+	}
+
+	private static WebElement findElement(WebDriver driver, String xPath) throws InterruptedException {
+		WebElement webElement = null;
+        try {
+        	webElement = driver.findElement(By.xpath(xPath));
+        } catch (Exception e) {
+        	System.out.println("----------------WebElement Not Found... Trying 2nd attempt----------------");
+            Thread.sleep(3000);
+            webElement = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/ul[1]/li[2]"));
+		}
+        return webElement;
+	}
