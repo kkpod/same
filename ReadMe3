@@ -1,7 +1,17 @@
-	
 	private static void placeOrders(WebDriver driver, OrdersToBePlaced ordersToBePlaced, int buyIndicator, String bitURL) throws ParseException, InterruptedException {
         List<String> recentBuyPrices = ordersToBePlaced.getRecentBuyPrices();
-        Set<String> recentBuyPricesSet = new HashSet<>(recentBuyPrices);
+        
+        Map<String, Integer> recentBuyPricesMap = new HashMap<String, Integer>();
+        for (String recentBuyPrice : recentBuyPrices) {
+        	Integer countOfBuys = recentBuyPricesMap.get(recentBuyPrice);
+        	if (countOfBuys == null) {
+        		recentBuyPricesMap.put(recentBuyPrice, 1);
+        	} else {
+        		recentBuyPricesMap.put(recentBuyPrice, countOfBuys+1);
+        	}
+        }
+
+        Set<Entry<String, Integer>> recentBuyPricesSet = recentBuyPricesMap.entrySet();
         
         if (recentBuyPricesSet.size() > 0) {
     		driver.get(bitURL);
@@ -14,8 +24,8 @@
             sellTab.click();
             Thread.sleep(500);
 
-        	for (String recentBuyPrice : recentBuyPricesSet) {
-        		getSellOrderPrice(driver, recentBuyPrice, bitURL);
+        	for (Entry<String, Integer> recentBuyPriceEntry : recentBuyPricesSet) {
+        		getSellOrderPrice(driver, recentBuyPriceEntry, bitURL);
         	}
         }
         
@@ -23,7 +33,18 @@
 
         buyIndicator++;
         List<String> recentSellPrices = ordersToBePlaced.getRecentSellPrices();
-        Set<String> recentSellPricesSet = new HashSet<>(recentSellPrices);
+        Map<String, Integer> recentSellPricesMap = new HashMap<String, Integer>();
+        for (String recentSellPrice : recentSellPrices) {
+        	Integer countOfSells = recentSellPricesMap.get(recentSellPrice);
+        	if (countOfSells == null) {
+        		recentBuyPricesMap.put(recentSellPrice, 1);
+        	} else {
+        		recentBuyPricesMap.put(recentSellPrice, countOfSells+1);
+        	}
+        }
+
+        Set<Entry<String, Integer>> recentSellPricesSet = recentBuyPricesMap.entrySet();
+
         if (recentSellPricesSet.size() > 0 || buyIndicator % 60 == 0) {
     		driver.get(bitURL);
             Thread.sleep(2000);
@@ -33,8 +54,8 @@
         	
         	buyIndicator = 0;
         	int buyIndex = 0;
-        	for (String recentSellPrice : recentSellPricesSet) {
-        		getBuyOrderPrice(driver, bitURL, buyIndex, recentSellPrice);
+        	for (Entry<String, Integer> recentSellPriceEntry : recentSellPricesSet) {
+        		getBuyOrderPrice(driver, bitURL, buyIndex, recentSellPriceEntry);
         		buyIndex++;
         	}
         	if (recentSellPrices.size() == 0) {
@@ -43,25 +64,31 @@
         }
 	}
 	
-	private static void getBuyOrderPrice(WebDriver driver, String tradeURL, int buyIndex, String sellPriceStr) throws ParseException, InterruptedException {
-		Double sellPrice = NumberFormat.getNumberInstance().parse(sellPriceStr).doubleValue();
+	private static void getBuyOrderPrice(WebDriver driver, String tradeURL, int buyIndex, Entry<String, Integer> sellPriceStr) throws ParseException, InterruptedException {
+		Double sellPrice = NumberFormat.getNumberInstance().parse(sellPriceStr.getKey()).doubleValue();
 		Double limitBuyPrice = sellPrice;
 		
-		if (sellPrice % 50.00 == 0) {
-			limitBuyPrice = sellPrice - 50.00;
-			placeBuyOrder(driver, limitBuyPrice, buyIndex);
-		} 
-		if (sellPrice % 25.00 == 0) {
-			limitBuyPrice = sellPrice - 25.00;
-			placeBuyOrder(driver, limitBuyPrice, buyIndex);
-		} 
-		if (sellPrice % 10.00 == 0) {
-			limitBuyPrice = sellPrice - 10.00;
-			placeBuyOrder(driver, limitBuyPrice, buyIndex);
-		} 
-		if (sellPrice % 0.50 == 0) {
-			limitBuyPrice = sellPrice - 5.00;
-			placeBuyOrder(driver, limitBuyPrice, buyIndex);
+		for (int i = 1; i <= sellPriceStr.getValue(); i++) {
+			switch (i) {
+			case 1:
+				limitBuyPrice = sellPrice - 5.00;
+				placeBuyOrder(driver, limitBuyPrice, buyIndex);
+				break;
+			case 2:
+				limitBuyPrice = sellPrice - 10.00;
+				placeBuyOrder(driver, limitBuyPrice, buyIndex);
+				break;
+			case 3:
+				limitBuyPrice = sellPrice - 25.00;
+				placeBuyOrder(driver, limitBuyPrice, buyIndex);
+				break;
+			case 4:
+				limitBuyPrice = sellPrice - 50.00;
+				placeBuyOrder(driver, limitBuyPrice, buyIndex);
+				break;
+			default:
+				break;
+			}
 		}
 	}
 
@@ -91,26 +118,32 @@
 		
 	}
 
-	private static void getSellOrderPrice(WebDriver driver, String price, String tradeURL) throws ParseException, InterruptedException {
+	private static void getSellOrderPrice(WebDriver driver, Entry<String, Integer> recentBuyPriceEntry, String tradeURL) throws ParseException, InterruptedException {
 		
-		Double boughtPrice = NumberFormat.getNumberInstance().parse(price).doubleValue();
+		Double boughtPrice = NumberFormat.getNumberInstance().parse(recentBuyPriceEntry.getKey()).doubleValue();
 		Double limitSellPrice = boughtPrice;
 		
-		if (boughtPrice % 50.00 == 0) {
-			limitSellPrice = boughtPrice + 50.00;
-			placeSellOrder(driver, limitSellPrice);;
-		} 
-		if (boughtPrice % 25.00 == 0) {
-			limitSellPrice = boughtPrice + 25.00;
-			placeSellOrder(driver, limitSellPrice);;
-		} 
-		if (boughtPrice % 10.00 == 0) {
-			limitSellPrice = boughtPrice + 10.00;
-			placeSellOrder(driver, limitSellPrice);;
-		} 
-		if (boughtPrice % 0.50 == 0) {
-			limitSellPrice = boughtPrice + 5.00;
-			placeSellOrder(driver, limitSellPrice);;
+		for (int i=1; i<= recentBuyPriceEntry.getValue(); i++) {
+			switch (i) {
+			case 1:
+				limitSellPrice = boughtPrice + 5.00;
+				placeSellOrder(driver, limitSellPrice);;
+				break;
+			case 2:
+				limitSellPrice = boughtPrice + 10.00;
+				placeSellOrder(driver, limitSellPrice);;
+				break;
+			case 3:
+				limitSellPrice = boughtPrice + 25.00;
+				placeSellOrder(driver, limitSellPrice);;
+				break;
+			case 4:
+				limitSellPrice = boughtPrice + 50.00;
+				placeSellOrder(driver, limitSellPrice);;
+				break;
+			default:
+				break;
+			};
 		}
 	}
 
@@ -137,16 +170,4 @@
         WebElement placeOrderButton = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/button"));
         placeOrderButton.click();
         Thread.sleep(1000);
-	}
-
-	private static WebElement findElement(WebDriver driver, String xPath) throws InterruptedException {
-		WebElement webElement = null;
-        try {
-        	webElement = driver.findElement(By.xpath(xPath));
-        } catch (Exception e) {
-        	System.out.println("----------------WebElement Not Found... Trying 2nd attempt----------------");
-            Thread.sleep(3000);
-            webElement = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/ul[1]/li[2]"));
-		}
-        return webElement;
 	}
