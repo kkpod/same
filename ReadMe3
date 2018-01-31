@@ -53,10 +53,10 @@
             Thread.sleep(500);
         	
         	buyIndicator = 0;
-        	int buyIndex = 0;
         	for (Entry<String, Integer> recentSellPriceEntry : recentSellPricesSet) {
-        		getBuyOrderPrice(driver, bitURL, buyIndex, recentSellPriceEntry);
-        		buyIndex++;
+        		if (!recentSellPriceEntry.getKey().endsWith(".50")) {
+            		getBuyOrderPrice(driver, bitURL, recentSellPriceEntry);
+        		}
         	}
         	if (recentSellPrices.size() == 0) {
         		//placeBuyOrderWithCurrentPrice(driver, bitURL, buyIndex);
@@ -64,27 +64,27 @@
         }
 	}
 	
-	private static void getBuyOrderPrice(WebDriver driver, String tradeURL, int buyIndex, Entry<String, Integer> sellPriceStr) throws ParseException, InterruptedException {
+	private static void getBuyOrderPrice(WebDriver driver, String tradeURL, Entry<String, Integer> sellPriceStr) throws ParseException, InterruptedException {
 		Double sellPrice = NumberFormat.getNumberInstance().parse(sellPriceStr.getKey()).doubleValue();
 		Double limitBuyPrice = sellPrice;
 		
 		for (int i = 1; i <= sellPriceStr.getValue(); i++) {
 			switch (i) {
 			case 1:
-				limitBuyPrice = sellPrice - 5.00;
-				placeBuyOrder(driver, limitBuyPrice, buyIndex);
+				limitBuyPrice = sellPrice - 4.02;
+				placeBuyOrder(driver, limitBuyPrice);
 				break;
 			case 2:
-				limitBuyPrice = sellPrice - 10.00;
-				placeBuyOrder(driver, limitBuyPrice, buyIndex);
+				limitBuyPrice = sellPrice - 9.02;
+				placeBuyOrder(driver, limitBuyPrice);
 				break;
 			case 3:
-				limitBuyPrice = sellPrice - 25.00;
-				placeBuyOrder(driver, limitBuyPrice, buyIndex);
+				limitBuyPrice = sellPrice - 24.02;
+				placeBuyOrder(driver, limitBuyPrice);
 				break;
 			case 4:
-				limitBuyPrice = sellPrice - 50.00;
-				placeBuyOrder(driver, limitBuyPrice, buyIndex);
+				limitBuyPrice = sellPrice - 49.02;
+				placeBuyOrder(driver, limitBuyPrice);
 				break;
 			default:
 				break;
@@ -92,7 +92,7 @@
 		}
 	}
 
-	private static void placeBuyOrder(WebDriver driver, double limitBuyPrice, int buyIndex) throws ParseException, InterruptedException {
+	private static void placeBuyOrder(WebDriver driver, double limitBuyPrice) throws ParseException, InterruptedException {
 		System.out.println("Placing Buy Order for : " + limitBuyPrice);
 
         WebElement currentPriceElement = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[2]/div/div[1]/ul/li[2]/h4/span[1]"));
@@ -102,7 +102,8 @@
 
 		//TODO: REDUCE TIMESTAMP BETWEEN TEXT BOXES FROM 1000-->100
 		if (limitBuyPrice >= currentPrice) {
-			limitBuyPrice = Math.round(currentPrice) - 0.50;
+			//limitBuyPrice = Math.round(currentPrice) - 300.51;
+			limitBuyPrice = limitBuyPrice - 300;
 		}
 
         WebElement amountField = driver.findElement(By.xpath("//*[@id=\"page_content\"]/div/div[3]/aside/div/div/article[2]/div/form/div[1]/div[1]/div[2]/input"));
@@ -126,19 +127,19 @@
 		for (int i=1; i<= recentBuyPriceEntry.getValue(); i++) {
 			switch (i) {
 			case 1:
-				limitSellPrice = boughtPrice + 5.00;
+				limitSellPrice = boughtPrice + 4.02;
 				placeSellOrder(driver, limitSellPrice);;
 				break;
 			case 2:
-				limitSellPrice = boughtPrice + 10.00;
+				limitSellPrice = boughtPrice + 9.02;
 				placeSellOrder(driver, limitSellPrice);;
 				break;
 			case 3:
-				limitSellPrice = boughtPrice + 25.00;
+				limitSellPrice = boughtPrice + 24.02;
 				placeSellOrder(driver, limitSellPrice);;
 				break;
 			case 4:
-				limitSellPrice = boughtPrice + 50.00;
+				limitSellPrice = boughtPrice + 49.02;
 				placeSellOrder(driver, limitSellPrice);;
 				break;
 			default:
