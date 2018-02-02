@@ -1,0 +1,42 @@
+    	List<WebElement> li_All = new ArrayList<>();
+    	List<Trade> trades = new ArrayList<>();
+    	List<Trade> exceptionalTrades = new ArrayList<>();
+    	Map<String, List<Trade>> exceptionalTradesMap = new HashMap<String, List<Trade>>();
+    	
+		for (int i = 0; i < 10; i++) {
+			WebElement element = li_All.get(i);
+			String side = element.findElements(By.tagName("div")).get(3).getText().toUpperCase();
+			String size = element.findElements(By.tagName("div")).get(4).getText();
+			String price = element.findElements(By.tagName("div")).get(5).getText();
+			String tradeId = element.findElements(By.tagName("div")).get(6).getText();
+			size=size.replace("≈ ", "");
+			double sizeD = NumberFormat.getNumberInstance(java.util.Locale.US).parse(size).doubleValue();
+
+			if (sizeD >= 0.01) {
+				Trade trade = new Trade();
+				trade.setPrice(price);trade.setSide(side);trade.setSize(size);trade.setTradeId(tradeId);
+				trades.add(trade);
+			} else {
+				Trade trade = new Trade();
+				trade.setPrice(price);trade.setSide(side);trade.setSize(size);trade.setTradeId(tradeId);
+				exceptionalTrades.add(trade);
+			}
+		}
+
+		for (Trade exceptionalTrade : exceptionalTrades) {
+			List<Trade> exceptionalTradesRespectToPrice = exceptionalTradesMap.get(exceptionalTrade.getPrice());
+			if (exceptionalTradesRespectToPrice == null) {
+				exceptionalTradesRespectToPrice = new ArrayList<>();
+			}
+			exceptionalTradesRespectToPrice.add(exceptionalTrade);
+			exceptionalTradesMap.put(exceptionalTrade.getPrice(), exceptionalTradesRespectToPrice);
+		}
+		
+		Set<Entry<String, List<Trade>>> setOfExceptionalTrades = exceptionalTradesMap.entrySet();  
+		for (Entry<String, List<Trade>> exceptionalTrade : setOfExceptionalTrades ) {
+			trades.add(exceptionalTrade.getValue().get(0));
+		}
+		
+		for (Trade trade : trades) {
+			//fillRecords.add(OrderDAO.getFillRecord(tradeId, side, size, price, bitype, bitProduct));
+		}
