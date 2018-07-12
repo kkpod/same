@@ -1,0 +1,28 @@
+TD
+Program-1
+Table	-	All Transactions
+	Servlet to LOAD CSV to DB
+	TransanctionID is PK
+View	-	Transactions of BOUGHT & SOLD
+	Servlet to Process Transactions Table
+	Description Starts with "Sold"/"Bought"
+PositionsTable-	Transactions of each Stock of ALL BOUGHT till last SOLD
+	Get distinct stocks
+	Get last SOLD date of each STOCK
+	Get BOUGHT transactions of each STOCK(Till last SOLD)
+	Calculate AVGPrice: SUM(Qty*Price)/TotalQty
+	Calculate LASTBOUGHTDate, NumberOfDaySinceLastBought
+	Calculate LASTSOLDDate, NumberOfDaysSinceLastSOLD
+
+Program2
+Elible for SELL:
+	UpdateFromMSNTable --> CurrentPrice
+	NumberOfDaySinceLastBought > 30 days
+	Profit% > 2 
+Eligible for BUY:
+	From MSN with compare52Week < 2.0 (STRATEGY: TDETF)
+	NumberOfDaysSinceLastSOLD > 30 days
+	STOCK not is CurrentPositionsList
+
+
+	
